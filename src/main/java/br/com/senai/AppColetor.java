@@ -15,7 +15,7 @@ public class AppColetor {
             MqttConnectOptions options = new MqttConnectOptions();
             options.setCleanSession(true);
 
-            System.out.println("Conectando ao Broker...");
+            System.out.println("Conectando ao Broker....");
             client.connect(options);
             System.out.println("Conectado com sucesso!");
 
