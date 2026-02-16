@@ -1,67 +1,43 @@
 package br.com.senai;
 
-import java.util.Random;
+import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
+import org.eclipse.paho.client.mqttv3.MqttException;
 
-@SuppressWarnings("all")
-
-/*
-  PROJETO: Coletor de dados de Automação
-  OBJETIVO: Exemplificar a : - Coleta;
-                             - Tratamento; e
-                             - Validação de dados Indústriais.
- */
-
-public class AppColector {
+public class AppColetor {
     public static void main(String[] args) {
+        String broker = "tcp://broker.hivemq.com:1883";
+        String clientId = "JavaClient_Aluno_" + System.currentTimeMillis(); 
+        String topic = "senai/dados/temperatura";
 
-        //Exibição do cabeçalho: Simula a inicialização de um sistema de informação
-        System.out.println("==========================================");
-        System.out.println("== Industrial Monitoring System -- V0.1 ==");
-        System.out.println("==========================================");
+        try {
+            MqttClient client = new MqttClient(broker, clientId);
+            MqttConnectOptions options = new MqttConnectOptions();
+            options.setCleanSession(true);
 
-        //Criação de um laço (loop) para repetição da coleta 5x
-        //OBS: Isso é uma simulação, na vida real, isso rodaria infinitamente para monitorar a máquina
+            System.out.println("Conectando ao Broker...");
+            client.connect(options);
+            System.out.println("Conectado com sucesso!");
 
-        for (int i = 1; i <= 5; i++) {
-            System.out.println("\nReading process data.. - Cicle N° " + i + ".");
+            // Assinando o tópico
+            client.subscribe(topic, (t, msg) -> {
+                String payload = new String(msg.getPayload());
+                double temp = Double.parseDouble(payload);
+                
+                System.out.println("\n----------------------------");
+                System.out.println("DADO RECEBIDO DA AUTOMAÇÃO:");
+                System.out.println("Temperatura: " + temp + "°C");
 
-            //1.Coleta de Dados
-            double value_temp = read_sensor("Temperature_OVEN_01");
+                // Lógica do Desafio Extra
+                if (temp > 30.0) {
+                    System.err.println("STATUS: [ALERTA] Temperatura Crítica!");
+                } else {
+                    System.out.println("STATUS: [NORMAL] Operação estável.");
+                }
+            });
 
-            //2/3.Tratamento de Dados e Validação
-            validate_data_Sec("Temperature", value_temp, 20.0, 80.0);
-
-            try {
-                Thread.sleep(2000);
-            } catch (InterruptedException e) {
-                System.out.println("| ERR0R: ERROR IN TIME! |");
-            }
-        }
-
-        System.out.println("\n");
-        System.out.println("===================");
-        System.out.println("== COLLECT ENDED ==");
-        System.out.println("===================");
-    }
-
-    //Métodos Especiais (1)
-    public static double read_sensor(String tag) {
-        Random rand = new Random();
-        //Gerar de fato um número entre 10.0 - 100.00 para simular a variação de temperatura real do processo
-        double read_value = 10 + (100 - 10) * rand.nextDouble();
-        return read_value;
-    }
-
-    //Métodos Especiais (2)
-    public static void validate_data_Sec(String sensor_name, Double value_sensor, Double min, Double max) {
-        //Exibir valor formatado com duas casas decimais
-        System.out.printf("Sensor: %s | Actual Value: %.2f°C", sensor_name, value_sensor);
-
-        //Lógica de Programação
-        if (value_sensor >= min && value_sensor <= max) {
-            System.out.println("\n >> Normal Operation << ");
-        } else {
-            System.out.println("\n >> Outside of Security levels << ");
+        } catch (MqttException e) {
+            System.out.println("Erro de conexão: " + e.getMessage());
         }
     }
 }
